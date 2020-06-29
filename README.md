@@ -26,7 +26,9 @@ In preparation
 ## Related Literature
 
 Monge, Azahar, and Philipp Birken. "On the convergence rate of the Dirichlet–Neumann iteration for unsteady thermal fluid–structure interaction." Computational Mechanics 62.3 (2018): 525-541.
+
 Monge, Azahar, and Philipp Birken. "A Multirate Neumann--Neumann Waveform Relaxation Method for Heterogeneous Coupled Heat Equations." SIAM Journal on Scientific Computing 41.5 (2019): S86-S105.
+
 Monge, Azahar, and Philipp Birken. "A time adaptive Neumann-Neumann waveform relaxation method for thermal fluid-structure interaction."
 
 ## Overview
