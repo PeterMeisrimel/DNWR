@@ -8,7 +8,6 @@ Created on Fri Feb 21 12:01:39 2020
 
 import numpy as np
 import pylab as pl
-import scipy as sp
 pl.close('all')
 
 from Problem_FSI_1D import Problem_FSI_1D
@@ -36,7 +35,6 @@ def get_opt_theta(n, T, steps_range, which, label = 'label'):
     pl.axhline(lim_zero, ls = '--', color = 'k', label = r'$\theta_{c \rightarrow 0}$')
     pl.axhline(lim_inf, ls = ':', color = 'k', label = r'$\theta_{c \rightarrow \infty}$')
     pl.legend()
-#    pl.xlabel(r'$c = \frac{\Delta t}{\Delta x^2}$', labelpad = -30, position = (1.05, -1), fontsize = 20)
     pl.xlabel('c', labelpad = -30, position = (1.05, -1), fontsize = 20)
     lp = -50 if label == 'Air-Steel' else -20
     pl.ylabel(r'$\theta_{opt}$', rotation = 0, labelpad = lp, position = (2., 1.), fontsize = 20)

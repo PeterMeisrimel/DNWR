@@ -10,7 +10,8 @@ import numpy as np
 
 #############################################################
 #  SDIRK 2, Multirate
-#############################################################    
+#############################################################  
+# DEPRECATED  
 ## not well maintained, might not include some recently adopted features
 ## Basic idea: The Neumann solver also outputs the stagevalue for the interface temperature, which is then used in the Dirichlet solver
 ## This achieves convergence to the monolithic solution, but is not suitable for multirate

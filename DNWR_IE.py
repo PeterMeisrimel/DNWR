@@ -40,7 +40,7 @@ def DNWR_IE(self, tf, N1, N2, init_cond, theta = None, maxiter = 100, TOL = 1e-8
     ug_WF_new = [np.copy(ug0) for i in range(N2 + 1)] # waveform of ug, N grid
     flux_WF = [np.copy(flux0) for i in range(N1 + 1)] # waveform of fluxes, D grid
    
-    rel_tol_fac, updates = self.norm_L2(ug0), []
+    rel_tol_fac, updates = self.norm_interface(ug0), []
     if rel_tol_fac < 1e-6: rel_tol_fac = 1. ## safeguard again too small update factor
     for k in range(maxiter):
         # Dirichlet time-integration
@@ -65,7 +65,7 @@ def DNWR_IE(self, tf, N1, N2, init_cond, theta = None, maxiter = 100, TOL = 1e-8
         ug_WF_old = [theta*ug_WF_new[i] + (1-theta)*ug_WF_old[i] for i in range(len(t2))]
             
         # bookkeeping
-        updates.append(self.norm_L2(ug_WF_old[-1] - tmp))
+        updates.append(self.norm_interface(ug_WF_old[-1] - tmp))
         if updates[-1]/rel_tol_fac < TOL: # STOPPING CRITERIA FOR FIXED POINT ITERATION
             break
     return u1, u2, ug_WF_old[-1], updates, k + 1
@@ -96,35 +96,35 @@ if __name__ == '__main__':
     
     for which in ['air_water', 'air_steel', 'water_steel']:
         pp = get_parameters(which)
-        p1 = {'init_cond': init_cond_1d, 'n': 50, 'dim': 1, 'order': 1, 'WR_type': 'DNWR', **pp, 'tf': 1000}
-        p2 = {'init_cond': init_cond_2d, 'n': 32, 'dim': 2, 'order': 1, 'WR_type': 'DNWR', **pp, 'tf': 1000}
-        verify_MR_comb(k = 10, savefig = save + which + '/' + which, **p1)
-        verify_MR_comb(k = 8, savefig = save + which + '/' + which, **p2)
+        p1 = {'init_cond': init_cond_1d, 'n': 50, 'dim': 1, 'order': 1, 'WR_type': 'DNWR', **pp, 'tf': 10000}
+        p2 = {'init_cond': init_cond_2d, 'n': 32, 'dim': 2, 'order': 1, 'WR_type': 'DNWR', **pp, 'tf': 10000}
+        verify_MR_comb(k = 6, savefig = save + which + '/' + which, **p1)
+        verify_MR_comb(k = 6, savefig = save + which + '/' + which, **p2)
     
     ## EXTRA LEN STUFF    
-    p_base = get_parameters('test') ## basic testing parameters
-    p_len = {'len_1' : 2, 'len_2': 3}
-    init_cond_1d_len = get_init_cond(1, True)
-    init_cond_2d_len = get_init_cond(2, True)
-    p1 = {'init_cond': init_cond_1d, 'n': 50, 'dim': 1, 'order': 1, 'WR_type': 'DNWR', **p_base, **p_len}
-    p2 = {'init_cond': init_cond_2d, 'n': 32, 'dim': 2, 'order': 1, 'WR_type': 'DNWR', **p_base, **p_len}
-    
-    save = 'verify/DNWR/IE/extra_len/'
-    ## 1D
-    verify_with_monolithic(k = 14, savefig = save, **p1) # ex sol in single iteration
-    verify_with_monolithic(k = 14, theta = 0.7, savefig = save + 'non_opt_theta', **p1) # theta not optimal to see actual convergence
-    verify_splitting_error(k = 10, savefig = save, **p1)
-    verify_comb_error(k = 10, savefig = save, **p1)
-    verify_MR_comb(k = 8, savefig = save, **p1)
-    ## 2D
-    verify_with_monolithic(k = 12, savefig = save, **p2)
-    verify_splitting_error(k = 10, savefig = save, **p2)
-    verify_comb_error(k = 9, savefig = save, **p2)
-    verify_MR_comb(k = 8, savefig = save, **p2)
-    
-    for which in ['air_water', 'air_steel', 'water_steel']:
-        pp = get_parameters(which)
-        p1 = {'init_cond': init_cond_1d, 'n': 50, 'dim': 1, 'order': 1, 'WR_type': 'DNWR', **pp, 'tf': 1000}
-        p2 = {'init_cond': init_cond_2d, 'n': 32, 'dim': 2, 'order': 1, 'WR_type': 'DNWR', **pp, 'tf': 1000}
-        verify_MR_comb(k = 8, savefig = save + which + '/' + which, **p1)
-        verify_MR_comb(k = 8, savefig = save + which + '/' + which, **p2)
+#    p_base = get_parameters('test') ## basic testing parameters
+#    p_len = {'len_1' : 2, 'len_2': 3}
+#    init_cond_1d_len = get_init_cond(1, True)
+#    init_cond_2d_len = get_init_cond(2, True)
+#    p1 = {'init_cond': init_cond_1d, 'n': 50, 'dim': 1, 'order': 1, 'WR_type': 'DNWR', **p_base, **p_len}
+#    p2 = {'init_cond': init_cond_2d, 'n': 32, 'dim': 2, 'order': 1, 'WR_type': 'DNWR', **p_base, **p_len}
+#    
+#    save = 'verify/DNWR/IE/extra_len/'
+#    ## 1D
+#    verify_with_monolithic(k = 14, savefig = save, **p1) # ex sol in single iteration
+#    verify_with_monolithic(k = 14, theta = 0.7, savefig = save + 'non_opt_theta', **p1) # theta not optimal to see actual convergence
+#    verify_splitting_error(k = 10, savefig = save, **p1)
+#    verify_comb_error(k = 10, savefig = save, **p1)
+#    verify_MR_comb(k = 8, savefig = save, **p1)
+#    ## 2D
+#    verify_with_monolithic(k = 12, savefig = save, **p2)
+#    verify_splitting_error(k = 10, savefig = save, **p2)
+#    verify_comb_error(k = 9, savefig = save, **p2)
+#    verify_MR_comb(k = 8, savefig = save, **p2)
+#    
+#    for which in ['air_water', 'air_steel', 'water_steel']:
+#        pp = get_parameters(which)
+#        p1 = {'init_cond': init_cond_1d, 'n': 50, 'dim': 1, 'order': 1, 'WR_type': 'DNWR', **pp, 'tf': 10000}
+#        p2 = {'init_cond': init_cond_2d, 'n': 32, 'dim': 2, 'order': 1, 'WR_type': 'DNWR', **pp, 'tf': 10000}
+#        verify_MR_comb(k = 8, savefig = save + which + '/' + which, **p1)
+#        verify_MR_comb(k = 8, savefig = save + which + '/' + which, **p2)

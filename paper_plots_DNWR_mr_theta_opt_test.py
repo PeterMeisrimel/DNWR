@@ -8,10 +8,8 @@ Created on Tue Apr 28 14:47:34 2020
 
 import numpy as np
 import pylab as pl
-import scipy as sp
 from FSI_verification import get_problem, get_solver, get_parameters, get_init_cond
 import json
-from Problem_FSI_1D import Problem_FSI_1D
 pl.close('all')
 
 pl.rcParams['lines.linewidth'] = 2
@@ -33,10 +31,7 @@ def get_conv_rates(tf, s = 10, n = 199, C1 = 1, C2 = 10, kmax = 6, **kwargs):
     results['tf'] = tf
     results['cfl'] = []
     
-    theta_min = []
-    theta_max = []
-    theta_actual = []
-    theta_avg = []
+    theta_min, theta_max, theta_actual, theta_avg = [], [], [], []
     
     dx = 1/(n+1)
     for n in nn:
@@ -92,7 +87,7 @@ def plotting(input_file, savefile):
     pl.xlabel('C', labelpad = -20, position = (1.08, -1), fontsize = 20)
     lp = -50 if label == 'Air-Steel' else -70
     pl.ylabel('Conv. rate', rotation = 0, labelpad = lp, position = (2., 1.05), fontsize = 20)
-    pl.ylim(1e-7, 2) ## manually setting limits
+    pl.ylim(1e-8, 2) ## manually setting limits
     pl.grid(True, 'major')
     pl.legend()
     pl.savefig(savefile, dpi = 100)
@@ -100,8 +95,8 @@ def plotting(input_file, savefile):
 if __name__ == "__main__":
     kmax = 6
     for C1, C2 in [(1, 10), (10, 1)]:
-        for tf, which in [(1e6, 'air_water'), (1e4, 'air_steel'), (1e4, 'water_steel')]:
+        for tf, which in [(1e4, 'air_water'), (1e4, 'air_steel'), (1e4, 'water_steel')]:
             tf = int(tf)
             file = f'plots_data/MR_theta_opt_test_{which}_{C1}_{C2}_{tf}.txt'
-#            run_all(file, **get_parameters(which), tf = tf, s = 40, n = 199, C1 = C1, C2 = C2)
+            run_all(file, **get_parameters(which), tf = tf, s = 40, n = 199, C1 = C1, C2 = C2)
             plotting(file, f'plots/MR_theta_opt_test_{which}_{C1}_{C2}_{tf}.png')

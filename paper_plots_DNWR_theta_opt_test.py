@@ -8,7 +8,6 @@ Created on Tue Apr 28 14:47:34 2020
 
 import numpy as np
 import pylab as pl
-import scipy as sp
 from FSI_verification import get_problem, get_solver, get_parameters, get_init_cond
 import json
 from Problem_FSI_1D import Problem_FSI_1D
@@ -101,11 +100,11 @@ def plotting(input_file, savefile):
     
 if __name__ == "__main__":
     kmax = 6
-    for tf, which, C1, C2, thmin, thmax in [(1e6, 'air_water', 1, 1, 0.9, 1),
-                                            (1e4, 'air_steel', 1, 10, 0.9992, 0.9999),
-                                            (1e4, 'water_steel', 10, 1, 0.2, 1)]:
+    for tf, which, C1, C2, thmin, thmax in [(1e4, 'air_water', 10, 1, 0.9, 1),
+                                            (1e4, 'air_steel', 1, 1, 0.9992, 0.9999),
+                                            (1e4, 'water_steel', 1, 10, 0.2, 1)]:
         tf = int(tf)
-        file = f'plots_data/theta_opt_test_{which}_{C1}_{C2}_{tf}.txt'
-#       run_all(file, **get_parameters(which), tf = tf, n1 = 199, n2 = 99, s = 30, C1 = C1, C2 = C2)
+        file = 'plots_data/theta_opt_test_{}_{}_{}_{}.txt'.format(which, C1, C2, tf)
+        run_all(file, **get_parameters(which), tf = tf, n1 = 199, n2 = 99, s = 30, C1 = C1, C2 = C2, thmin = thmin, thmax = thmax)
 #        run_all(file, **get_parameters(which), tf = tf, n1 = 9, n2 = 9, s = 10, C1 = C1, C2 = C2, thmin = thmin, thmax = thmax)
-        plotting(file, f'plots/theta_opt_test_{which}_{C1}_{C2}_{tf}.png')
+        plotting(file, 'plots/theta_opt_test_{}_{}_{}_{}.png'.format(which, C1, C2, tf))

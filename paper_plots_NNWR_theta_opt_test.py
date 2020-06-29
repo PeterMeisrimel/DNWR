@@ -69,8 +69,9 @@ def run_all(output_file, s, N_steps = 100, n1 = 50, n2 = 32, thmin = 0, thmax = 
     res_S2_2D = get_conv_rates(N_steps = N_steps, s = s, order = 2, dim = 2, n = n2, init_cond = get_init_cond(2), thmin = thmin, thmax = thmax, **kwargs)
     
     results = {'IE_1D': res_IE_1D, 'IE_2D': res_IE_2D, 'S2_1D': res_S2_1D, 'S2_2D': res_S2_2D}
-    with open(output_file, 'w') as myfile:
-        myfile.write(json.dumps(results, indent = 2, sort_keys = True))
+    if res_IE_1D is not None: # only write on processor 0
+        with open(output_file, 'w') as myfile:
+            myfile.write(json.dumps(results, indent = 2, sort_keys = True))
         
 def plotting(input_file, savefile):
     comm = MPI.COMM_WORLD
@@ -98,22 +99,23 @@ def plotting(input_file, savefile):
     pl.axvline(p.NNWR_theta_opt(dt, dt), ls = '-', color = 'k', label = r'$\Theta_{opt}$')
     pl.axhline(1, color = 'k', ls = '--', linewidth = 1)
     a, b = res_IE_1D['theta_CFL_inf'], res_IE_1D['theta_CFL_zero']
-    pl.ylim(pl.ylim())
+    pl.ylim(1e-4, 1e2)
     pl.fill_between([min(a,b), max(a,b)], [min(pl.ylim())/100]*2, [max(pl.ylim())*100]*2, alpha = 0.2)
     pl.xlim(max(0,res_IE_1D['theta_start']), res_IE_1D['theta_stop'])
     pl.xlabel(r'$\Theta$', labelpad = -20, position = (1.11, -1), fontsize = 20)
     lp = -50 if label == 'Air-Steel' else -70
     pl.ylabel('Conv. rate', rotation = 0, labelpad = lp, position = (2., 1.05), fontsize = 20)
-    pl.legend()
+    pl.legend(loc = 4) # lower right
     pl.savefig(savefile, dpi = 100)
     
 if __name__ == "__main__":
     ## mpiexec -n 2 python3 paper_plots_NNWR_theta_opt_test.py
     kmax = 6
-    for tf, which, C1, C2, thmin, thmax in [(1e6, 'air_water', 1, 1, 0, 0.06),
-                                            (1e4, 'air_steel', 1, 10, 0, 0.0008),
-                                            (1e4, 'water_steel', 10, 1, 0, 0.3)]:
+    for tf, which, C1, C2, thmin, thmax in [(1e4, 'air_water', 10, 1, 0, 0.06),
+                                            (1e4, 'air_steel', 1, 1, 0, 0.0008),
+                                            (1e4, 'water_steel', 1, 10, 0, 0.3)]:
         tf = int(tf)
         file = f'plots_data/NNWR_theta_opt_test_{which}_{C1}_{C2}_{tf}.txt'
-#        run_all(file, **get_parameters(which), tf = tf, n1 = 199, n2 = 99, s = 30, C1 = C1, C2 = C2, thmin = thmin, thmax = thmax)
+#        run_all(file, **get_parameters(which), tf = tf, n1 = 9, n2 = 9, s = 30, C1 = C1, C2 = C2, thmin = thmin, thmax = thmax)
+        run_all(file, **get_parameters(which), tf = tf, n1 = 199, n2 = 99, s = 30, C1 = C1, C2 = C2, thmin = thmin, thmax = thmax)
         plotting(file, f'plots/NNWR_theta_opt_test_{which}_{C1}_{C2}_{tf}.png')

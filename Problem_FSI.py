@@ -19,6 +19,7 @@ class Problem_FSI:
         self.dx = 1/(self.n + 1)
         self.lambda_1, self.lambda_2 = lambda_1, lambda_2
         self.alpha_1, self.alpha_2 = alpha_1, alpha_2
+        self.len_total = len_1 + len_2 ## required for discrete L2 norm
         
         self.WR_type = WR_type
         if self.WR_type == 'DNWR' or self.WR_type == 'MONOLITHIC':
@@ -55,19 +56,40 @@ class Problem_FSI:
         if self.WR_type == 'MONOLITHIC':
             self.A, self.M = self.get_monolithic_matrices()
             
+    def get_flux(self, dt, unew, uold, ug_new, ug_old):
+        dtinv = 1/dt
+        return self.Mg1.dot((unew - uold)*dtinv) + self.Ag1.dot(unew) + self.Mgg1.dot((ug_new - ug_old)*dtinv) + self.Agg1.dot(ug_new)
+            
     ## linear interpolation as used
     def interpolation(self, t, data):
         return interp1d(t, data, kind = 'linear', axis = 0, fill_value = 'extrapolate')
     
-    ## L2 fac to be initialized in instances, i.e. 1D or 2D problem
-    ## inner = False for interface, inner = True for interal variables
-    def norm_L2(self, vec, inner = False):  ## DISCRETE L2 norm
-        if inner: return np.linalg.norm(vec, 2)*self.L2_fac_inner ## interface variables, e.g. termination criterion
-        else:     return np.linalg.norm(vec, 2)*self.L2_fac ## internal variables, e.g. timestep control
-        
+    def norm_interface(self, vec):
+        return np.linalg.norm(vec, 2)*self.dx**((self.dim - 1)/2)
+    
+    def norm_inner(self, *args):
+        if len(args) == 2 and args[1] == 'D': ## inner for a Dirichlet problem
+            ## Dirichlet matrix are always A1, M1 here, self.len_1 similarly always corresponds to Dirichlet problem
+            u1 = args[0]
+            return np.sqrt(self.dx**self.dim*self.M1.dot(u1).dot(u1)/self.alpha_1/self.len_1)
+        elif len(args) == 2 and args[1] == 'N': ## inner for Neumann problem, (u2, ug) as input
+            ## Neumann problem always A2, M2, self.len_2 similarly always corresponds to Neumann problem
+            u2, ug = args[0][:-self.ny], args[0][-self.ny:]
+            M_dot_u2 = (self.M2.dot(u2) + self.M2g.dot(ug))/self.alpha_2
+            M_dot_ug = (self.Mg2.dot(u2) + self.Mgg2.dot(ug))/self.alpha_2
+            return np.sqrt(self.dx**self.dim*(M_dot_u2.dot(u2) + M_dot_ug.dot(ug))/self.len_2)
+        elif len(args) == 3: ## inner for whole domain, (u1, u2, ug) as input
+            if self.WR_type == 'NNWR':
+                raise ValueError('cannot do full discrete norm evaluation using NNWR')
+            u1, u2, ug = args[0], args[1], args[2]
+            M_dot_u1 = (self.M1.dot(u1) + self.M1g.dot(ug))/self.alpha_1
+            M_dot_u2 = (self.M2.dot(u2) + self.M2g.dot(ug))/self.alpha_2
+            M_dot_ug = (self.Mg1.dot(u1) + self.Mgg1.dot(ug))/self.alpha_1 + (self.Mg2.dot(u2) + self.Mgg2.dot(ug))/self.alpha_2
+            return np.sqrt(self.dx**self.dim*(M_dot_u1.dot(u1) + M_dot_u2.dot(u2) + M_dot_ug.dot(ug))/self.len_total)
+    
     ## import all the relevant methods
     from relaxation import w_i, S_i, DNWR_theta_opt, DNWR_theta_opt_TA, NNWR_theta_opt, NNWR_theta_opt_TA
-    from dt_control import get_new_dt, get_dt0, get_new_dt_PI, get_new_dt_deadbeat
+    from dt_control import get_dt0, get_new_dt_PI, get_new_dt_deadbeat
     
     from DNWR_IE import DNWR_IE, solve_dirichlet_IE, solve_neumann_IE
     from DNWR_SDIRK2 import DNWR_SDIRK2, solve_dirichlet_SDIRK2, solve_neumann_SDIRK2
@@ -114,15 +136,13 @@ class Problem_FSI:
         return u1, u2, ug, flux
     
 if __name__ == '__main__':
-    from FSI_verification import get_problem, get_solver, solve_monolithic
     from FSI_verification import get_parameters, get_init_cond
-    from FSI_verification import ex_sol_grid, verify_mono_time, visual_verification, verify_space_error
+    from FSI_verification import verify_mono_time, visual_verification, verify_space_error
     
     p_base = get_parameters('test') ## basic testing parameters
     init_cond_1d = get_init_cond(1)
     init_cond_2d = get_init_cond(2)
     a, lam = 1., 0.1
-    from numpy import pi
     
     ################# Verification of time-integration of monolithic solution
     ## 1D
@@ -140,6 +160,7 @@ if __name__ == '__main__':
     ################# Verification of time-integration of monolithic solution
     
     ################# Verification of convergence to space error
+    from numpy import pi
     p1 = {'init_cond': init_cond_1d, 'dim': 1, 'tf': 1, **p_base}
     ex_sol = lambda x, t: np.exp(-(pi**2)*t*lam/(4*a))*init_cond_1d(x)
     verify_space_error(n_min = 2, k = 11, ex_sol = ex_sol, savefig = 'verify/base/', **p1)
@@ -148,12 +169,9 @@ if __name__ == '__main__':
     ex_sol = lambda x, y, t: np.exp(-5*(pi**2)*t*lam/(4*a))*init_cond_2d(x, y)
     verify_space_error(n_min = 2, k = 7, ex_sol = ex_sol, savefig = 'verify/base/', **p2)
     
-    
-    pp = {'init_cond': init_cond_2d, 'dim': 2, 'tf': 100000, **get_parameters('air_water')}
-    visual_verification(order = 2, n = 100, **pp)
-    pp = {'init_cond': get_init_cond(2, num = 2), 'dim': 2, 'tf': 1000000, **get_parameters('air_water')}
+    pp = {'init_cond': get_init_cond(2, num = 1), 'dim': 2, 'tf': 10000, **get_parameters('air_water')}
     visual_verification(order = 2, n = 32, **pp)
-    pp = {'init_cond': get_init_cond(2, num = 2), 'dim': 2, 'tf': 10000, **get_parameters('air_steel')}
+    pp = {'init_cond': get_init_cond(2, num = 1), 'dim': 2, 'tf': 10000, **get_parameters('air_steel')}
     visual_verification(order = 2, n = 32, **pp)
-    pp = {'init_cond': get_init_cond(2, num = 2), 'dim': 2, 'tf': 10000, **get_parameters('water_steel')}
+    pp = {'init_cond': get_init_cond(2, num = 1), 'dim': 2, 'tf': 10000, **get_parameters('water_steel')}
     visual_verification(order = 2, n = 32, **pp)

@@ -33,54 +33,43 @@ class Problem_FSI_2D(Problem_FSI):
             intf_idx_plus = 1
         else: raise ValueError('invalid interface position')
         
-        Aig = sp.spdiags(-(lambda_diff/(dx**2))*np.ones(NN), intf_idx , NN, ny, format = 'csr')
-        Agi = sp.spdiags(-(lambda_diff/(dx**2))*np.ones(NN), -intf_idx, ny, NN, format = 'csr')
-        Aggi = sp.spdiags([2*lambda_diff/(dx**2)*np.ones(ny)] + 2*[-0.5 * lambda_diff/(dx**2)*np.ones(ny)], [0, 1, -1], ny, ny, format = 'csr')
-
-        Mig = sp.spdiags([-alpha/12*np.ones(NN), alpha/4 *np.ones(NN)], [intf_idx, intf_idx + intf_idx_plus], NN, ny, format='csr')
-        Mgi = sp.spdiags([-alpha/12*np.ones(NN), alpha/4*np.ones(NN)], [-intf_idx, -intf_idx + intf_idx_plus] , ny, NN, format='csr')
-        Mggi = sp.spdiags([5*alpha/12*np.ones(ny)] + 2*[-alpha/24*np.ones(ny)], [0, 1, -1], ny, ny, format = 'csr')
+        a_fac = lambda_diff/dx**2
+        Aig = sp.spdiags(-a_fac*np.ones(NN), intf_idx , NN, ny, format = 'csr')
+        Agi = sp.spdiags(-a_fac*np.ones(NN), -intf_idx, ny, NN, format = 'csr')
+        Aggi = sp.spdiags([2*a_fac*np.ones(ny)] + 2*[-1/2*a_fac*np.ones(ny)], [0, 1, -1], ny, ny, format = 'csr')
         
-        B = sp.spdiags(4*np.ones(ny),  0, ny, ny, format = 'csr') - \
-            sp.spdiags(  np.ones((2,ny)),  [-1, 1], ny, ny, format = 'csr') 
-        Ai = lambda_diff/(dx**2)*(sp.kron(sp.spdiags(np.ones(nx), 0, nx, nx, format = 'csr'), B) + \
-             sp.kron(sp.spdiags(np.ones((2,nx)), [-1, 1], nx, nx, format = 'csr'), sp.spdiags(-np.ones(ny), 0, ny, ny, format = 'csr')))
+        B = sp.spdiags(4*np.ones(ny), 0, ny, ny, format = 'csr') - sp.spdiags(np.ones((2, ny)), [-1, 1], ny, ny, format = 'csr')
+        Ai = a_fac*(sp.kron(sp.spdiags(np.ones(nx), 0, nx, nx, format = 'csr'), B) +
+             sp.kron(sp.spdiags(np.ones((2, nx)), [-1, 1], nx, nx, format = 'csr'), sp.spdiags(-np.ones(ny), 0, ny, ny, format = 'csr')))
+
+        Mig = sp.spdiags([-alpha/12*np.ones(NN), alpha/4*np.ones(NN)], [intf_idx, intf_idx + intf_idx_plus], NN, ny, format = 'csr')
+        Mgi = sp.spdiags([-alpha/12*np.ones(NN), alpha/4*np.ones(NN)], [-intf_idx, -intf_idx + intf_idx_plus] , ny, NN, format = 'csr')
+        Mggi = sp.spdiags([5*alpha/12*np.ones(ny)] + 2*[-alpha/24*np.ones(ny)], [0, 1, -1], ny, ny, format = 'csr')
         
         N = sp.spdiags([5/6*np.ones(ny)] + 2*[-1/12*np.ones(ny)], [0, 1, -1], ny, ny, format = 'csr')
         N1 = sp.spdiags([-1/12*np.ones(ny), 1/4*np.ones(ny)], [0, -1], ny, ny, format = 'csr')
         N2 = sp.spdiags([-1/12*np.ones(ny), 1/4*np.ones(ny)], [0, 1], ny, ny, format = 'csr')
-        Mi = self.alpha_2*(sp.kron(sp.spdiags(np.ones(nx), 0, nx, nx, format = 'csr'), N) + \
-             sp.kron(sp.spdiags(np.ones(nx), -1, nx, nx, format = 'csr'), N1) + \
-             sp.kron(sp.spdiags(np.ones(nx), 1, nx, nx, format = 'csr'), N2))
+        Mi = alpha*( sp.kron(sp.spdiags(np.ones(nx), 0, nx, nx, format = 'csr'), N)
+             + sp.kron(sp.spdiags(np.ones(nx), -1, nx, nx, format = 'csr'), N1)
+             + sp.kron(sp.spdiags(np.ones(nx), 1, nx, nx, format = 'csr'), N2))
         
         if not neumann:
             return Ai, Mi, Aig, Agi, Aggi, Mig, Mgi, Mggi
         ## else neumann is True
-        
         ## also assemble neumann system matrix here
-        ## bmat = function for building sparse matrix by blocks
-        ## slicing would involve conversions to dense matrices
         N_A = sp.bmat([[Ai, Aig], [Agi, Aggi]], format = 'csr')
         N_M = sp.bmat([[Mi, Mig], [Mgi, Mggi]], format = 'csr')
         
         return Ai, Mi, Aig, Agi, Aggi, Mig, Mgi, Mggi, N_A, N_M
     
     def get_monolithic_matrices(self):
-        ## correctly stack up matrices of monolithic system
-        ## could also be done with sp.bmat?
-        NN1, NN2, ny = self.n_int_1, self.n_int_2, self.n
-        NN = NN1 + NN2
-        M, A = sp.lil_matrix((NN + ny, NN + ny)), sp.lil_matrix((NN + ny, NN + ny))
-        
-        M[:NN1, :NN1] = self.M1              ; A[:NN1, :NN1] = self.A1
-        M[NN1:-ny, NN1:-ny] = self.M2        ; A[NN1:-ny, NN1:-ny] = self.A2
-        M[-ny:, -ny:] = self.Mgg1 + self.Mgg2; A[-ny:, -ny:] = self.Agg1 + self.Agg2
-        M[-ny:, :NN1] = self.Mg1             ; A[-ny:, :NN1] = self.Ag1
-        M[-ny:, NN1:-ny] = self.Mg2          ; A[-ny:, NN1:-ny] = self.Ag2
-        M[:NN1, -ny:] = self.M1g             ; A[:NN1, -ny:] = self.A1g
-        M[NN1:-ny, -ny:] = self.M2g          ; A[NN1:-ny, -ny:] = self.A2g
-        M, A = M.tocsr(), A.tocsr()
-        
+        assert self.WR_type != 'NNWR', 'monolithic matrices are not stored on single processor for NNWR'
+        A = sp.bmat([[self.A1, np.zeros((self.n_int_1, self.n_int_2)), self.A1g],
+                     [np.zeros((self.n_int_2, self.n_int_1)), self.A2, self.A2g], 
+                     [self.Ag1, self.Ag2, self.Agg1 + self.Agg2]], format = 'csr')
+        M = sp.bmat([[self.M1, np.zeros((self.n_int_1, self.n_int_2)), self.M1g],
+                     [np.zeros((self.n_int_2, self.n_int_1)), self.M2, self.M2g], 
+                     [self.Mg1, self.Mg2, self.Mgg1 + self.Mgg2]], format = 'csr')
         return A, M
     
     def get_initial_values(self, init_cond):
@@ -98,3 +87,20 @@ class Problem_FSI_2D(Problem_FSI):
             for j, x in enumerate(x2[1:-1]):
                 u2[j*n + i] = init_cond(x, y[i+1])
         return u1, u2, ug
+    
+if __name__ == '__main__':
+    from FSI_verification import get_parameters
+    ## discrete L2 norm test
+    pp = get_parameters('test')
+    n_list = [2**i for i in range(6)]
+    discr, mass = [], []
+    for n in n_list:
+        prob = Problem_FSI_2D(n, **pp, len_1 = 3, len_2 = 4, WR_type = 'DNWR')
+        u0_f = lambda x, y: 500
+        
+        u1, u2, ug = prob.get_initial_values(u0_f)
+        uu = np.hstack((u1, u2, ug))
+        print(prob.norm_interface(ug),
+              prob.norm_inner(u1, 'D'),
+              prob.norm_inner(np.hstack([u2, ug]), 'N'),
+              prob.norm_inner(u1, u2, ug))

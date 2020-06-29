@@ -6,7 +6,6 @@ Created on Tue May 12 17:43:59 2020
 @author: Peter Meisrimel, Lund University
 """
 
-import numpy as np
 import pylab as pl
 from FSI_verification import get_problem, get_solver, get_parameters, get_init_cond, solve_monolithic
 import json
@@ -48,17 +47,18 @@ def get_err_work(output_file, init_cond, tf, C1 = 1, C2 = 1, n = 99, k_mr = 6, k
     sols = []
     for s in steps_list:
         u1, u2, ug, _, _ = solver_MR(tf, s*C1, s*C2, init_cond, TOL = 1e-12)
-        sols.append(np.hstack([u1, u2, ug]))
-    results['MR_base_sols'] = [list(i) for i in sols]
+        sols.append((u1, u2, ug))
+    results['MR_base_sols'] = [(list(i[0]), list(i[1]), list(i[2])) for i in sols]
             
     ## b) get monolithic reference sol with even smaller dt
-    u1ref, u2ref, ugref, _ = solve_monolithic(tf, max(C1, C2)*2**k_mr, init_cond, 2, dim = 2, n = n, **kwargs)
-    uref = np.hstack([u1ref, u2ref, ugref])
-    results['MR_ref'] = list(uref)
+    u1ref, u2ref, ugref, _, prob_mono = solve_monolithic(tf, max(C1, C2)*2**k_mr, init_cond, 2, dim = 2, n = n, **kwargs)
+    results['MR_ref'] = (list(u1ref), list(u2ref), list(ugref))
     
     ## c) calculate errors
-    norm_scale = 1./(n + 1) ## discrete L2 norm scaling factor
-    errs = [np.linalg.norm(u - uref, 2)*norm_scale for u in sols]
+    errs = []
+    for u in sols:
+        u1, u2, ug = u
+        errs.append(prob_mono.norm_inner(u1  - u1ref, u2 - u2ref, ug - ugref))
     results['errs_for_tols'] = errs
     
     ## step 2, compute new, proper MR solutions
@@ -67,11 +67,11 @@ def get_err_work(output_file, init_cond, tf, C1 = 1, C2 = 1, n = 99, k_mr = 6, k
         print(s, steps_list)
         tol = e/5
         u1, u2, ug, _, iters = solver_MR(tf, s*C1, s*C2, init_cond, TOL = tol)
-        sols_MR_new.append(np.hstack([u1, u2, ug]))
+        sols_MR_new.append((u1, u2, ug))
         steps_MR_new.append(iters*(s*C1 + s*C2))
         iters_MR_new.append(iters)
         
-    results['sols_MR_new'] = [list(u) for u in sols_MR_new]
+    results['sols_MR_new'] = [(list(u[0]), list(u[1]), list(u[2])) for u in sols_MR_new]
     results['steps_MR_new'] = steps_MR_new
     results['iters_MR_new'] = iters_MR_new
     
@@ -81,25 +81,32 @@ def get_err_work(output_file, init_cond, tf, C1 = 1, C2 = 1, n = 99, k_mr = 6, k
     tols_list = [10**(-i) for i in range(k_adaptive)]
     for tol in tols_list:
         u1, u2, ug, _, iters, ss = solver_adaptive(tf, init_cond, TOL = tol)
-        sols_adaptive.append(np.hstack([u1, u2, ug]))
+        sols_adaptive.append((u1, u2, ug))
         steps_adaptive.append(ss)
         iters_adaptive.append(iters)
     
-    results['sols_adaptive'] = [list(u) for u in sols_adaptive]
+    results['sols_adaptive'] = [(list(u[0]), list(u[1]), list(u[2])) for u in sols_adaptive]
     results['steps_adaptive'] = steps_adaptive
     results['iters_adaptive'] = iters_adaptive
     
     ## step 4, reference solution for error computation, here: use adaptive for one tol further
     u1ref, u2ref, ugref, _, _, _ = solver_adaptive(tf, init_cond, TOL = 10**(-k_adaptive))
-    uref = np.hstack([u1ref, u2ref, ugref])
-    results['err_ref'] = list(uref)
+    results['err_ref'] = (list(u1ref), list(u2ref), list(ugref))
     
     ## step 5, compute errors
-    errs_MR = [np.linalg.norm(u - uref, 2)*norm_scale for u in sols_MR_new]
-    errs_adaptive = [np.linalg.norm(u - uref, 2)*norm_scale for u in sols_adaptive]
-    
+    errs_MR = []
+    for u in sols_MR_new:
+        u1, u2, ug = u
+        errs_MR.append(prob_mono.norm_inner(u1  - u1ref, u2 - u2ref, ug - ugref))
+        
+    errs_adaptive = []
+    for u in sols_adaptive:
+        u1, u2, ug = u
+        errs_adaptive.append(prob_mono.norm_inner(u1  - u1ref, u2 - u2ref, ug - ugref))
+        
     results['errs_MR'] = errs_MR
     results['errs_adaptive'] = errs_adaptive
+    
     with open(output_file, 'w') as myfile:
         myfile.write(json.dumps(results, indent = 2, sort_keys = True))
         
@@ -125,19 +132,18 @@ def plotting(input_file, savefile):
     pl.savefig(savefile[:-4] + '_iters.png', dpi = 100)
 
 if __name__ == '__main__':
-    n, k_mr, k_adap = 99, 6, 6 # potentially run k = 6
+    n, k_mr, k_adap = 99, 6, 6
     for i in [1, 2]:
-        for tf, which in [(1e6, 'air_water'), (1e4, 'air_steel'), (1e4, 'water_steel')]:
+#        for tf, which in [(1e4, 'air_water')]:
+#        for tf, which in [(1e4, 'air_steel')]:
+        for tf, which in [(1e4, 'water_steel')]:
             para = get_parameters(which)
-            lam_over_a_1 = para['lambda_1']/para['alpha_1']
-            lam_over_a_2 = para['lambda_2']/para['alpha_2']
-            if lam_over_a_1 > lam_over_a_2:
-                C1 = 1
-                C2 = int(lam_over_a_1/lam_over_a_2)
-            else:
-                C1 = int(lam_over_a_2/lam_over_a_1)
-                C2 = 1
+            D1 = para['lambda_1']/para['alpha_1']
+            D2 = para['lambda_2']/para['alpha_2']
+            
+            C1 = max(1, int(D1/D2))
+            C2 = max(1, int(D2/D1))
             print(i, tf, which, C1, C2)
             out_file = 'plots_data/err_work_u0_{}_{}.txt'.format(i, which)
-#            get_err_work(out_file, get_init_cond(2, num = i), tf, C1, C2, n, k_mr, k_adap, **get_parameters(which))
+            get_err_work(out_file, get_init_cond(2, num = i), tf, C1, C2, n, k_mr, k_adap, **get_parameters(which))
             plotting(out_file, 'plots/err_work_u0_{}_{}.png'.format(i, which))

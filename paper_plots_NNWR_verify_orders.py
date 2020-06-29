@@ -17,8 +17,6 @@ pl.rcParams['lines.linewidth'] = 3
 pl.rcParams['font.size'] = 18
 pl.rcParams['lines.markersize'] = 12
 
-## mpiexec -n 2 python3 paper_verify_orders_NNWR.py
-
 def verify_comb_error(init_cond, tf = 1, k = 10, kmin = 0, C1 = 1, C2 = 1, theta = None, WR_type = 'NNWR', order = 1, TOL = 1e-13, **kwargs):
     comm = MPI.COMM_WORLD
     if comm.size != 2: raise ValueError('incorrect number of processes, needs to be exactly 2')
@@ -29,21 +27,16 @@ def verify_comb_error(init_cond, tf = 1, k = 10, kmin = 0, C1 = 1, C2 = 1, theta
     solver = get_solver(prob, order, WR_type)
     
     if ID_SELF == 0:
-        u1_ref, u2_ref, ug_ref, _ = solve_monolithic(tf, int(max(C1, C2))*2**(k+1), init_cond, order, **kwargs)
-        uref = np.hstack([u1_ref, u2_ref, ug_ref])
+        u1_ref, u2_ref, ug_ref, _, prob_mono = solve_monolithic(tf, int(max(C1, C2))*2**(k+1), init_cond, order, **kwargs)
     elif ID_SELF == 1:
         pass
-    
-    n, dim = kwargs['n'], kwargs['dim']
-    if dim == 1:  L2_fac = np.sqrt(1/(n + 1))
-    else:         L2_fac = 1/(n + 1)
     
     if ID_SELF == 0:
         errs = {'u': [], 'it': [], 'dts': []}
         for n_steps in [2**i for i in range(kmin, k)]:
             errs['dts'].append(tf/n_steps)
             u1, u2, ug, E, it = solver(tf, C1*n_steps, C2*n_steps, init_cond, theta, TOL = TOL)
-            errs['u'].append(np.linalg.norm(uref - np.hstack([u1, u2, ug]), 2)*L2_fac)
+            errs['u'].append(prob_mono.norm_inner(u1_ref - u1, u2_ref - u2, ug_ref  - ug))
             errs['it'].append(it)
     elif ID_SELF == 1:
         for n_steps in [2**i for i in range(kmin, k)]:
@@ -51,7 +44,7 @@ def verify_comb_error(init_cond, tf = 1, k = 10, kmin = 0, C1 = 1, C2 = 1, theta
         return None
     return errs
 
-def run_combined(tf = 1, k1 = 10, k2 = 10, TOL = 1e-6, n1 = 100, n2 = 50, C1 = 1, C2 = 1, savefile = None, **kwargs):
+def run_combined(tf = 1, k1 = 10, k2 = 10, TOL = 1e-13, n1 = 100, n2 = 50, C1 = 1, C2 = 1, savefile = None, **kwargs):
     res_1d_IE = verify_comb_error(get_init_cond(1), tf, k1, C1 = C1, C2 = C2, order = 1, TOL = TOL, dim = 1, n = n1, **kwargs)
     res_1d_SD2 = verify_comb_error(get_init_cond(1), tf, k1, C1 = C1, C2 = C2, order = 2, TOL = TOL, dim = 1, n = n1, **kwargs)
     
@@ -60,8 +53,9 @@ def run_combined(tf = 1, k1 = 10, k2 = 10, TOL = 1e-6, n1 = 100, n2 = 50, C1 = 1
     
     results = {'IE_1D': res_1d_IE, 'S2_1D': res_1d_SD2, 'IE_2D': res_2d_IE, 'S2_2D': res_2d_SD2,
                'tf': tf, 'n_1D': n1, 'n_2d': n2, 'C1': C1, 'C2': C2}
-    with open(savefile, 'w') as myfile:
-        myfile.write(json.dumps(results, indent = 2, sort_keys = True))
+    if res_1d_IE is not None: # only write on processor 0
+        with open(savefile, 'w') as myfile:
+            myfile.write(json.dumps(results, indent = 2, sort_keys = True))
         
 def plot_combined(input_file, savefile, hide = False):
     comm = MPI.COMM_WORLD
@@ -82,13 +76,12 @@ def plot_combined(input_file, savefile, hide = False):
     if not hide: 
         pl.loglog(res_S2_2D['dts'], res_S2_2D['u'], label = 'SD2, 2D', marker = 'v')
     dts = np.array(res_IE_1D['dts'])
-    pl.loglog(dts, dts/dts[0]*res_IE_1D['u'][0]*10, label = '1st', linestyle = ':')
-    pl.loglog(res_IE_1D['dts'], (dts/dts[0])**2*res_S2_1D['u'][0]*10, label = '2nd', linestyle = '--')
+    pl.loglog(dts, dts/dts[0]*(res_IE_1D['u'][0] + res_IE_2D['u'][0])/10, label = '1st', linestyle = ':')
+    pl.loglog(res_IE_1D['dts'], (dts/dts[0])**2*(res_S2_1D['u'][0] + res_S2_2D['u'][0])/10, label = '2nd', linestyle = '--')
     pl.xlabel(r'$\Delta t$', labelpad = -20, position = (1.05, -1), fontsize = 20)
     pl.ylabel('Err', rotation = 0, labelpad = -50, position = (2., 1.0), fontsize = 20)
     pl.grid(True, 'major')
-#    pl.title(r'Error over $\Delta t$')
-    pl.legend()
+    pl.legend(loc = 4)
     pl.savefig(savefile, dpi = 100)
     
     pl.figure()
@@ -100,14 +93,16 @@ def plot_combined(input_file, savefile, hide = False):
     pl.xlabel(r'$\Delta t$', labelpad = -20, position = (1.05, -1), fontsize = 20)
     pl.ylabel('Iters', rotation = 0, labelpad = -50, position = (2., 1.0), fontsize = 20)
     pl.grid(True, 'major')
-#    pl.title(r'Error over $\Delta t$')
     pl.legend()
     pl.savefig(savefile[:-4] + '_iters.png', dpi = 100)
     
 if __name__ == '__main__':
     # mpiexec -n 2 python3 paper_plots_NNWR_verify_orders.py
-    for tf, which, C1, C2 in [(1e6, 'air_water', 1, 1), (1e4, 'air_steel', 1, 10), (1e4, 'water_steel', 10, 1)]:
-        add = ''
-        save_file_data = f'plots_data/NNWR_{which}_{C1}_{C2}_MR_order{add}_new.txt'
+    for tf, which, C1, C2 in [(1, 'air_water', 10, 1),
+                              (1, 'air_steel', 1, 1),
+                              (1, 'water_steel', 1, 10)]:
+        add = '_tf_1'
+        save_file_data = f'plots_data/NNWR_{which}_{C1}_{C2}_MR_order{add}.txt'
+#        run_combined(tf = tf, k1 = 6, k2 = 5, n1 = 9, n2 = 9, C1 = C1, C2 = C2, savefile = save_file_data, **get_parameters(which))
         run_combined(tf = tf, k1 = 6, k2 = 5, n1 = 199, n2 = 99, C1 = C1, C2 = C2, savefile = save_file_data, **get_parameters(which))
-        plot_combined(save_file_data, f'plots/NNWR_{which}_{C1}_{C2}_MR_order{add}_new.png', which == 'water_steel')
+        plot_combined(save_file_data, f'plots/NNWR_{which}_{C1}_{C2}_MR_order{add}.png')

@@ -13,9 +13,12 @@ import numpy as np
 #############################################################    
 ## time grid is constructed during Dirichlet solve and same time grid is used for Neumann solver.
 ## Implementation not properly maintained, use on own risk
+#############
+# DEPRECATED
+#############
 def DNWR_SDIRK2_TA_single(self, tf, init_cond, maxiter = 100, TOL = 1e-8):
     print('this scheme is outdated and did not receive analogous updates')
-    print(f'TOL = {TOL}')
+    print('TOL = ', TOL)
     if self.WR_type != 'DNWR': raise ValueError('invalid solution method')
     u10, u20, ug0 = self.get_initial_values(init_cond) ## different for 1D and 2D
     
@@ -27,7 +30,7 @@ def DNWR_SDIRK2_TA_single(self, tf, init_cond, maxiter = 100, TOL = 1e-8):
     timesteps = 0
     TOL_FP, TOL_D = TOL, TOL/5 ## paper
     dt0 = self.get_dt0(tf, TOL_D, u10, which = 1)
-    rel_tol_fac, updates = self.norm_L2(ug0), []
+    rel_tol_fac, updates = self.norm_interface(ug0), []
     if rel_tol_fac < 1e-6: rel_tol_fac = 1.
     self.r_old = TOL_D # for PI controller
     for k in range(maxiter):
@@ -43,7 +46,7 @@ def DNWR_SDIRK2_TA_single(self, tf, init_cond, maxiter = 100, TOL = 1e-8):
             tt_stage.append(t + self.a*dt); flux_WF_1.append(flux1)
             t += dt
             tt.append(t); flux_WF_2.append(flux2)
-            dt = self.get_new_dt_PI(dt, err1, TOL_D)
+            dt = self.get_new_dt_PI(dt, self.norm_inner(err1, 'D'), TOL_D)
             if dt < 1e-14: raise ValueError('too small timesteps, aborting')
         # final timestep
         dt = tf - t
@@ -69,7 +72,7 @@ def DNWR_SDIRK2_TA_single(self, tf, init_cond, maxiter = 100, TOL = 1e-8):
         tt_old = tt
         
         # bookkeeping
-        updates.append(self.norm_L2(ug_WF_old[-1] - tmp))
+        updates.append(self.norm_interface(ug_WF_old[-1] - tmp))
         timesteps += 2*len(tt) - 2
         print(k, updates[-1], len(tt) - 1)
         if updates[-1]/rel_tol_fac < TOL_FP: # STOPPING CRITERIA FOR FIXED POINT ITERATION
@@ -82,7 +85,7 @@ def DNWR_SDIRK2_TA_single(self, tf, init_cond, maxiter = 100, TOL = 1e-8):
 ## Does adaptivity on both the Dirichlet and Neumann solve
 def DNWR_SDIRK2_TA_double(self, tf, init_cond, maxiter = 100, TOL = 1e-8):
     if self.WR_type != 'DNWR': raise ValueError('invalid solution method')
-    print(f'TOL = {TOL}')
+    print('TOL = ', TOL)
     TOL_FP, TOL_D, TOL_N = TOL, TOL/5, TOL/5 ## paper
     
     u10, u20, ug0 = self.get_initial_values(init_cond) ## different for 1D and 2D
@@ -98,7 +101,7 @@ def DNWR_SDIRK2_TA_double(self, tf, init_cond, maxiter = 100, TOL = 1e-8):
         
     timesteps = 0 # counter for total number of timesteps
     
-    rel_tol_fac, updates = self.norm_L2(ug0), []
+    rel_tol_fac, updates = self.norm_interface(ug0), []
     if rel_tol_fac < 1e-6: rel_tol_fac = 1.
     for k in range(maxiter):
         # Dirichlet time-integration
@@ -110,32 +113,29 @@ def DNWR_SDIRK2_TA_double(self, tf, init_cond, maxiter = 100, TOL = 1e-8):
         self.r_old = TOL_D # for PI controller
         ug_WF_func = self.interpolation(t2_old, ug_WF_old) # interface values WF
         
-        j, u1_list = 0, [] # storage for initial flux computation
+        u1_list = [] # storage for initial flux computation
         ## adaptive time-integration loop, iterate while current timestep does not overstep tf
         while t + dt < tf:
             u1, err1, flux1, flux2 = self.solve_dirichlet_SDIRK2(t, dt, u1, ug_WF_func)
             t1_stage.append(t + self.a*dt); flux_WF_1.append(flux1) ## stage value
             t += dt
             t1.append(t); flux_WF_2.append(flux2) ## value on full timestep
-            if j < 2: ## storage for initial flux computation, saves up to 2 values, and their timesteps
+            if len(u1_list) < 2: ## storage for initial flux computation, saves up to 2 values, and their timesteps
                 u1_list.append((dt, np.copy(u1)))
-                j += 1
-            dt = self.get_new_dt_PI(dt, err1, TOL_D) ## PI controller
+            dt = self.get_new_dt_PI(dt, self.norm_inner(err1, 'D'), TOL_D) ## PI controller
             if dt < 1e-14: raise ValueError('too small timesteps, aborting') ## prevents too small timesteps
         # final timestep, truncate to hit tf
         dt = tf - t
         u1, _, flux1, flux2 = self.solve_dirichlet_SDIRK2(t, dt, u1, ug_WF_func)
         t1_stage.append(t + self.a*dt); flux_WF_1.append(flux1)
         t1.append(tf); flux_WF_2.append(flux2)
-        if j < 2: ## storage for initial flux computation
+        if len(u1_list) < 2: ## storage for initial flux computation
             u1_list.append((dt, np.copy(u1)))
-            j += 1
-            
-        if j == 1: ## only single timestep was done => 2 point difference
+        if len(u1_list) == 1: ## only single timestep was done => 2 point difference
             u1dot = (-u10 + u1)/dt0_D
             ugdot = (-ug0 + ug_WF_func(dt0_D))/dt0_D
             flux0 = self.Mgg1.dot(ugdot) + self.Mg1.dot(u1dot) + self.Agg1.dot(ug0) + self.Ag1.dot(u10)
-        elif j == 2: ## 3 point difference formula
+        elif len(u1_list) == 2: ## 3 point difference formula
             ## variable stepsize 3 point difference formular
             dtt1, dtt2 = u1_list[0][0], u1_list[1][0]
             c = dtt1/(dtt1 + dtt2)
@@ -161,7 +161,7 @@ def DNWR_SDIRK2_TA_double(self, tf, init_cond, maxiter = 100, TOL = 1e-8):
             t2_new.append(t)
             ug_WF_new.append(np.copy(ug_new))
             ug_old = ug_new
-            dt = self.get_new_dt_PI(dt, err2, TOL_N)
+            dt = self.get_new_dt_PI(dt, self.norm_inner(err2, 'N'), TOL_N)
             if dt < 1e-14: raise ValueError('too small timesteps, aborting')
         # final timestep
         dt = tf - t
@@ -180,7 +180,7 @@ def DNWR_SDIRK2_TA_double(self, tf, init_cond, maxiter = 100, TOL = 1e-8):
         t2_old = t2_new
         
         # bookkeeping
-        updates.append(self.norm_L2(ug_WF_old[-1] - tmp))
+        updates.append(self.norm_interface(ug_WF_old[-1] - tmp))
         timesteps += len(t2_new) + len(t1) - 2
         if updates[-1]/rel_tol_fac < TOL_FP: # STOPPING CRITERIA FOR FIXED POINT ITERATION
             print('converged', len(t1) - 1, len(t2_new) - 1)
@@ -201,12 +201,12 @@ if __name__ == '__main__':
         p1 = {'init_cond': init_cond_1d, 'n': 50, 'dim': 1, 'order': order, 'WR_type': 'DNWR', **p_base}
         p2 = {'init_cond': init_cond_2d, 'n': 32, 'dim': 2, 'order': order, 'WR_type': 'DNWR', **p_base}
     
-        verify_adaptive(k = 8, which_ref = 'fine', savefig = save, **p1) # 1D
-        verify_adaptive(k = 7, which_ref = 'fine', savefig = save, **p2) # 2D
+        verify_adaptive(k = 6, which_ref = 'fine', savefig = save, **p1) # 1D
+        verify_adaptive(k = 5, which_ref = 'fine', savefig = save, **p2) # 2D
         
         for which in ['air_water', 'air_steel', 'water_steel']:
             pp = get_parameters(which)
-            p1 = {'init_cond': init_cond_1d, 'n': 50, 'dim': 1, 'order': order, 'WR_type': 'DNWR', **pp, 'tf': 1000}
-            p2 = {'init_cond': init_cond_2d, 'n': 32, 'dim': 2, 'order': order, 'WR_type': 'DNWR', **pp, 'tf': 1000}
-            verify_adaptive(k = 9, savefig = save + which + '/' + which, which_ref = 'fine', **p1)
-            verify_adaptive(k = 8, savefig = save + which + '/' + which, which_ref = 'fine', **p2)
+            p1 = {'init_cond': init_cond_1d, 'n': 50, 'dim': 1, 'order': order, 'WR_type': 'DNWR', **pp, 'tf': 10000}
+            p2 = {'init_cond': init_cond_2d, 'n': 32, 'dim': 2, 'order': order, 'WR_type': 'DNWR', **pp, 'tf': 10000}
+            verify_adaptive(k = 7, savefig = save + which + '/' + which, which_ref = 'fine', **p1)
+            verify_adaptive(k = 6, savefig = save + which + '/' + which, which_ref = 'fine', **p2)

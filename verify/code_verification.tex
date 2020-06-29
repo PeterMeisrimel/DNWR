@@ -40,11 +40,11 @@ Default geometry is two coupled unit squares (lines) and the interface is positi
 
 \textbf{All} errors/updates are measured using the discrete L2 norm:
 % 
-\begin{itemize}
-\item 0 D (scalar case): $\|u\|_{L2} = |u|$
-\item 1 D: $\|\bm{u}\|_{L2} = \|\bm{u}\|_2 \sqrt{\Delta x}$
-\item 2 D: $\|\bm{u}\|_{L2} = \|\bm{u}\|_2 \Delta x$
-\end{itemize}
+\begin{equation*}
+\| \bm{u} \|^2 = (|\bm{u}^T \bm{M} \bm{u}|/|\Omega|,
+\end{equation*}
+% 
+where $\bm{M}$ is the mass matrix.
 
 Default space discretization given by internal points per unit length ($N$, $\Delta x = 1/(N+1)$) are 1D: $50$, 2D: $32$.
 
@@ -167,7 +167,7 @@ The coarse-coarse test is already done with test \ref{TEST COMB ERROR}, it serve
 \FloatBarrier
 \section{DNWR}\label{SEC DNWR}
 %
-\subsection{Implicit Euler}\label{SEC DWNR IE}
+\subsection{Implicit Euler}\label{SEC DNWR IE}
 % 
 \textbf{Figures}: \ref{FIG DNWR IE 1D MONO CONV}, \ref{FIG DNWR IE 2D MONO CONV}, \ref{FIG DNWR IE SPLIT ERROR}, \ref{FIG DNWR IE COMB ERROR} and \ref{FIG DNWR IE MR ERROR}. See Sections \ref{SEC DNWR IE AIR STEEL}, \ref{SEC DNWR IE WATER STEEL} and \ref{SEC DNWR IE WATER STEEL} for non equal material parameters.
 
@@ -262,7 +262,7 @@ The coarse-coarse test is already done with test \ref{TEST COMB ERROR}, it serve
 \end{figure}
 
 \FloatBarrier
-\subsection{SDIRK2}\label{SEC DWNR SDIRK2}
+\subsection{SDIRK2}\label{SEC DNWR SDIRK2}
 % 
 \textbf{Figures}: \ref{FIG DNWR SDIRK2 1D MONO CONV}, \ref{FIG DNWR SDIRK2 2D MONO CONV}, \ref{FIG DNWR SDIRK2 SPLIT ERROR}, \ref{FIG DNWR SDIRK2 COMB ERROR} and \ref{FIG DNWR SDIRK2 MR ERROR}. See Sections \ref{SEC DNWR SDIRK2 AIR STEEL}, \ref{SEC DNWR SDIRK2 WATER STEEL} and \ref{SEC DNWR SDIRK2 WATER STEEL} for non equal material parameters.
 
@@ -360,63 +360,64 @@ Tests with different materials work fine, the number of iterations for the Water
 \label{FIG DNWR SDIRK2 WATER STEEL 2D}
 \end{figure}
 
+% \FloatBarrier
+% \subsection{SDIRK2 time adaptive, single adaptive}\label{SEC DNWR SDIRK2 TA SINGLE}
+% % 
+% \textbf{Single adaptive:} Do adaptive time-integration for Dirichlet problem and use \textbf{same} timesteps for Neumann problem. 
+% 
+% \textbf{Figures}: \ref{FIG DNWR SDIRK2 TA SINGLE ERROR}. Figures \ref{FIG DNWR SDIRK2 TA SINGLE AIR STEEL}, \ref{FIG DNWR SDIRK2 TA SINGLE AIR WATER} and \ref{FIG DNWR SDIRK2 TA SINGLE WATER STEEL} for different material parameters.
+% 
+% \textbf{Summary}: Everything works well!
+% 
+% \begin{figure}[!ht]
+% % \includegraphics[scale = 0.35]{DNWR/TA/verify_adaptive_dim_1_n_50_order_-1.png}
+% % \includegraphics[scale = 0.35]{DNWR/TA/verify_adaptive_dim_2_n_32_order_-1.png}
+% \caption{Test \ref{TEST COMB ERROR}, DNWR, Time adaptive SDIRK2, single adaptive. Left: 1D, Right: 2D}
+% \label{FIG DNWR SDIRK2 TA SINGLE ERROR}
+% \end{figure}
+% 
+% \FloatBarrier
+% \subsubsection{Air-Steel}\label{SEC DNWR TA SINGLE AIR STEEL}
+% % 
+% 
+% \begin{figure}[!ht]
+% % \includegraphics[scale = 0.35]{DNWR/TA/air_steel/air_steelverify_adaptive_dim_1_n_50_order_-1.png}
+% % \includegraphics[scale = 0.35]{DNWR/TA/air_steel/air_steelverify_adaptive_dim_2_n_32_order_-1.png}
+% \caption{Test \ref{TEST MR} for Air-Steel coupling, DNWR, SDIRK2 TA single. Left: 1D. Right: 2D}
+% \label{FIG DNWR SDIRK2 TA SINGLE AIR STEEL}
+% \end{figure}
+% 
+% \FloatBarrier
+% \subsubsection{Air-Water}\label{SEC DNWR TA SINGLE AIR WATER}
+% % 
+% 
+% \begin{figure}[!ht]
+% % \includegraphics[scale = 0.35]{DNWR/TA/air_water/air_waterverify_adaptive_dim_1_n_50_order_-1.png}
+% % \includegraphics[scale = 0.35]{DNWR/TA/air_water/air_waterverify_adaptive_dim_2_n_32_order_-1.png}
+% \caption{Test \ref{TEST MR} for Air-Water coupling, DNWR, SDIRK2 TA single. Left: 1D. Right: 2D}
+% \label{FIG DNWR SDIRK2 TA SINGLE AIR WATER}
+% \end{figure}
+% 
+% \FloatBarrier
+% \subsubsection{Water-Steel}\label{SEC DNWR TA SINGLE WATER STEEL}
+% % 
+% 
+% \begin{figure}[!ht]
+% % \includegraphics[scale = 0.35]{DNWR/TA/water_steel/water_steelverify_adaptive_dim_1_n_50_order_-1.png}
+% % \includegraphics[scale = 0.35]{DNWR/TA/water_steel/water_steelverify_adaptive_dim_2_n_32_order_-1.png}
+% \caption{Test \ref{TEST MR} for Water-Steel coupling, DNWR, SDIRK2 TA single. Left: 1D. Right: 2D}
+% \label{FIG DNWR SDIRK2 TA SINGLE WATER STEEL}
+% \end{figure}
+
 \FloatBarrier
-\subsection{SDIRK2 time adaptive, single adaptive}\label{SEC DWNR SDIRK2 TA SINGLE}
+\subsection{SDIRK2 time adaptive, double adaptive}\label{SEC DNWR SDIRK2 TA DOUBLE}
 % 
 \textbf{Double adaptive:} Independent adaptivity for both subdomains.
 
-\textbf{Figures}: \ref{FIG DNWR SDIRK2 TA SINGLE ERROR}. Figures \ref{FIG DNWR SDIRK2 TA SINGLE AIR STEEL}, \ref{FIG DNWR SDIRK2 TA SINGLE AIR WATER} and \ref{FIG DNWR SDIRK2 TA SINGLE WATER STEEL} for different material parameters.
-
-\textbf{Summary}: Everything works well!
-
-\begin{figure}[!ht]
-\includegraphics[scale = 0.35]{DNWR/TA/verify_adaptive_dim_1_n_50_order_-1.png}
-\includegraphics[scale = 0.35]{DNWR/TA/verify_adaptive_dim_2_n_32_order_-1.png}
-\caption{Test \ref{TEST COMB ERROR}, DNWR, Time adaptive SDIRK2, single adaptive. Left: 1D, Right: 2D}
-\label{FIG DNWR SDIRK2 TA SINGLE ERROR}
-\end{figure}
-
-\FloatBarrier
-\subsubsection{Air-Steel}\label{SEC DNWR TA SINGLE AIR STEEL}
-% 
-
-\begin{figure}[!ht]
-\includegraphics[scale = 0.35]{DNWR/TA/air_steel/air_steelverify_adaptive_dim_1_n_50_order_-1.png}
-\includegraphics[scale = 0.35]{DNWR/TA/air_steel/air_steelverify_adaptive_dim_2_n_32_order_-1.png}
-\caption{Test \ref{TEST MR} for Air-Steel coupling, DNWR, SDIRK2 TA single. Left: 1D. Right: 2D}
-\label{FIG DNWR SDIRK2 TA SINGLE AIR STEEL}
-\end{figure}
-
-\FloatBarrier
-\subsubsection{Air-Water}\label{SEC DNWR TA SINGLE AIR WATER}
-% 
-
-\begin{figure}[!ht]
-\includegraphics[scale = 0.35]{DNWR/TA/air_water/air_waterverify_adaptive_dim_1_n_50_order_-1.png}
-\includegraphics[scale = 0.35]{DNWR/TA/air_water/air_waterverify_adaptive_dim_2_n_32_order_-1.png}
-\caption{Test \ref{TEST MR} for Air-Water coupling, DNWR, SDIRK2 TA single. Left: 1D. Right: 2D}
-\label{FIG DNWR SDIRK2 TA SINGLE AIR WATER}
-\end{figure}
-
-\FloatBarrier
-\subsubsection{Water-Steel}\label{SEC DNWR TA SINGLE WATER STEEL}
-% 
-
-\begin{figure}[!ht]
-\includegraphics[scale = 0.35]{DNWR/TA/water_steel/water_steelverify_adaptive_dim_1_n_50_order_-1.png}
-\includegraphics[scale = 0.35]{DNWR/TA/water_steel/water_steelverify_adaptive_dim_2_n_32_order_-1.png}
-\caption{Test \ref{TEST MR} for Water-Steel coupling, DNWR, SDIRK2 TA single. Left: 1D. Right: 2D}
-\label{FIG DNWR SDIRK2 TA SINGLE WATER STEEL}
-\end{figure}
-
-\FloatBarrier
-\subsection{SDIRK2 time adaptive, double adaptive}\label{SEC DWNR SDIRK2 TA DOUBLE}
-% 
-\textbf{Single adaptive:} Do adaptive time-integration for Dirichlet problem and use \textbf{same} timesteps for Neumann problem. 
-
 \textbf{Figures}: \ref{FIG DNWR SDIRK2 TA DOUBLE ERROR}. Figures \ref{FIG DNWR SDIRK2 TA DOUBLE AIR STEEL}, \ref{FIG DNWR SDIRK2 TA DOUBLE AIR WATER} and \ref{FIG DNWR SDIRK2 TA DOUBLE WATER STEEL} for different material parameters.
 
-\textbf{Summary}: Everything works well! Air-water 2D order looks a bit off, but the correct order is assumed eventually (tested via larger $\Delta x$ and smaller tolerances, see Figure \ref{FIG DNWR SDIRK2 TA DOUBLE AIR WATER 2})
+\textbf{Summary}: Everything works well! 
+% Air-water 2D order looks a bit off, but the correct order is assumed eventually (tested via larger $\Delta x$ and smaller tolerances, see Figure \ref{FIG DNWR SDIRK2 TA DOUBLE AIR WATER 2})
 
 \begin{figure}[!ht]
 \includegraphics[scale = 0.35]{DNWR/TA/verify_adaptive_dim_1_n_50_order_-2.png}
@@ -447,12 +448,6 @@ Tests with different materials work fine, the number of iterations for the Water
 \label{FIG DNWR SDIRK2 TA DOUBLE AIR WATER}
 \end{figure}
 
-\begin{figure}[!ht]
-\includegraphics[scale = 0.35]{DNWR/TA/air_water/air_waterverify_adaptive_dim_2_n_10_order_-2.png}
-\caption{Test \ref{TEST MR} for Air-Water coupling, DNWR, SDIRK2 TA double. 2D}
-\label{FIG DNWR SDIRK2 TA DOUBLE AIR WATER 2}
-\end{figure}
-
 \FloatBarrier
 \subsubsection{Water-Steel}\label{SEC DNWR TA DOUBLE WATER STEEL}
 % 
@@ -473,7 +468,7 @@ Tests with different materials work fine, the number of iterations for the Water
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-\subsection{Implicit Euler}\label{SEC DWNR IE}
+\subsection{Implicit Euler}\label{SEC NNWR IE}
 % 
 \textbf{Figures}: \ref{FIG NNWR IE 1D MONO CONV}, \ref{FIG NNWR IE 2D MONO CONV}, \ref{FIG NNWR IE SPLIT ERROR}, \ref{FIG NNWR IE COMB ERROR} and \ref{FIG NNWR IE MR ERROR}. See Sections \ref{SEC NNWR IE AIR STEEL}, \ref{SEC NNWR IE WATER STEEL} and \ref{SEC NNWR IE WATER STEEL} for non equal material parameters.
 
@@ -576,7 +571,7 @@ Tests with different materials work fine, the number of iterations for the Water
 \end{figure}
 
 \FloatBarrier
-\subsection{SDIRK2}\label{SEC DWNR SDIRK2}
+\subsection{SDIRK2}\label{SEC NNWR SDIRK2}
 % 
 \textbf{Figures}: \ref{FIG NNWR SDIRK2 1D MONO CONV}, \ref{FIG NNWR SDIRK2 2D MONO CONV}, \ref{FIG NNWR SDIRK2 SPLIT ERROR}, \ref{FIG NNWR SDIRK2 COMB ERROR} and \ref{FIG NNWR SDIRK2 MR ERROR}. See Sections \ref{SEC NNWR SDIRK2 AIR STEEL}, \ref{SEC NNWR SDIRK2 WATER STEEL} and \ref{SEC NNWR SDIRK2 WATER STEEL} for non equal material parameters.
 
@@ -626,7 +621,7 @@ Tests with different materials work fine, the number of iterations for the Water
 \FloatBarrier
 \subsubsection{Air-Steel}\label{SEC NNWR SDIRK2 AIR STEEL}
 %
-\textbf{Summary:} \todo{x}
+\textbf{Summary:}
 
 \begin{figure}[!ht]
 \includegraphics[scale = 0.35]{NNWR/SDIRK2/air_steel/air_steelverify_MR_error_dim_1_ord_2_C_10.png}
@@ -645,7 +640,7 @@ Tests with different materials work fine, the number of iterations for the Water
 \FloatBarrier
 \subsubsection{Air-Water}\label{SEC NNWR SDIRK2 AIR WATER}
 % 
-\textbf{Summary:} \todo{x}
+\textbf{Summary:}
 
 \begin{figure}[!ht]
 \includegraphics[scale = 0.35]{NNWR/SDIRK2/air_water/air_waterverify_MR_error_dim_1_ord_2_C_10.png}
@@ -664,7 +659,7 @@ Tests with different materials work fine, the number of iterations for the Water
 \FloatBarrier
 \subsubsection{Water-Steel}\label{SEC NNWR SDIRK2 WATER STEEL}
 % 
-\textbf{Summary:} \todo{wait for 2D result}
+\textbf{Summary:}
 
 \begin{figure}[!ht]
 \includegraphics[scale = 0.35]{NNWR/SDIRK2/water_steel/water_steelverify_MR_error_dim_1_ord_2_C_10.png}
@@ -680,102 +675,102 @@ Tests with different materials work fine, the number of iterations for the Water
 \label{FIG NNWR SDIRK2 WATER STEEL 2D}
 \end{figure}
 
-\FloatBarrier
-\subsection{SDIRK2 time adaptive, single adaptive}\label{SEC NNWR SDIRK2 TA SINGLE}
+% \FloatBarrier
+% \subsection{SDIRK2 time adaptive, single adaptive}\label{SEC NNWR SDIRK2 TA SINGLE}
+% % 
+% \textbf{Double adaptive:} Adaptivity only for the Dirichlet stage
 % 
-\textbf{Double adaptive:} Adaptivity only for the Dirichlet stage
-
-\textbf{Figures}: \ref{FIG NNWR SDIRK2 TA SINGLE ERROR}. Figures \ref{FIG NNWR SDIRK2 TA SINGLE AIR STEEL}, \ref{FIG NNWR SDIRK2 TA SINGLE AIR WATER} and \ref{FIG NNWR SDIRK2 TA SINGLE WATER STEEL} for different material parameters.
-
-\textbf{Summary}: It works some
-
-\begin{figure}[!ht]
-\includegraphics[scale = 0.35]{NNWR/TA/verify_adaptive_dim_1_n_50_order_-1.png}
-\includegraphics[scale = 0.35]{NNWR/TA/verify_adaptive_dim_2_n_32_order_-1.png}
-\caption{Test \ref{TEST COMB ERROR}, NNWR, Time adaptive SDIRK2, single adaptive. Left: 1D, Right: 2D}
-\label{FIG NNWR SDIRK2 TA SINGLE ERROR}
-\end{figure}
-
-\FloatBarrier
-\subsubsection{Air-Steel}\label{SEC NNWR TA SINGLE AIR STEEL}
+% \textbf{Figures}: \ref{FIG NNWR SDIRK2 TA SINGLE ERROR}. Figures \ref{FIG NNWR SDIRK2 TA SINGLE AIR STEEL}, \ref{FIG NNWR SDIRK2 TA SINGLE AIR WATER} and \ref{FIG NNWR SDIRK2 TA SINGLE WATER STEEL} for different material parameters.
 % 
-
-\begin{figure}[!ht]
-\includegraphics[scale = 0.35]{NNWR/TA/air_steel/air_steelverify_adaptive_dim_1_n_50_order_-1.png}
-\includegraphics[scale = 0.35]{NNWR/TA/air_steel/air_steelverify_adaptive_dim_2_n_32_order_-1.png}
-\caption{Test \ref{TEST MR} for Air-Steel coupling, NNWR, SDIRK2 TA single. Left: 1D. Right: 2D}
-\label{FIG NNWR SDIRK2 TA SINGLE AIR STEEL}
-\end{figure}
-
-\FloatBarrier
-\subsubsection{Air-Water}\label{SEC NNWR TA SINGLE AIR WATER}
+% \textbf{Summary}: It works some
 % 
-
-\begin{figure}[!ht]
-\includegraphics[scale = 0.35]{NNWR/TA/air_water/air_waterverify_adaptive_dim_1_n_50_order_-1.png}
-\includegraphics[scale = 0.35]{NNWR/TA/air_water/air_waterverify_adaptive_dim_2_n_32_order_-1.png}
-\caption{Test \ref{TEST MR} for Air-Water coupling, NNWR, SDIRK2 TA single. Left: 1D. Right: 2D}
-\label{FIG NNWR SDIRK2 TA SINGLE AIR WATER}
-\end{figure}
-
-\FloatBarrier
-\subsubsection{Water-Steel}\label{SEC NNWR TA SINGLE WATER STEEL}
+% \begin{figure}[!ht]
+% % \includegraphics[scale = 0.35]{NNWR/TA/verify_adaptive_dim_1_n_50_order_-1.png}
+% % \includegraphics[scale = 0.35]{NNWR/TA/verify_adaptive_dim_2_n_32_order_-1.png}
+% \caption{Test \ref{TEST COMB ERROR}, NNWR, Time adaptive SDIRK2, single adaptive. Left: 1D, Right: 2D}
+% \label{FIG NNWR SDIRK2 TA SINGLE ERROR}
+% \end{figure}
 % 
-
-\begin{figure}[!ht]
-\includegraphics[scale = 0.35]{NNWR/TA/water_steel/water_steelverify_adaptive_dim_1_n_50_order_-1.png}
-\includegraphics[scale = 0.35]{NNWR/TA/water_steel/water_steelverify_adaptive_dim_2_n_32_order_-1.png}
-\caption{Test \ref{TEST MR} for Water-Steel coupling, NNWR, SDIRK2 TA single. Left: 1D. Right: 2D}
-\label{FIG NNWR SDIRK2 TA SINGLE WATER STEEL}
-\end{figure}
-
-\FloatBarrier
-\subsection{SDIRK2 time adaptive, double adaptive}\label{SEC NNWR SDIRK2 TA DOUBLE}
+% \FloatBarrier
+% \subsubsection{Air-Steel}\label{SEC NNWR TA SINGLE AIR STEEL}
+% % 
 % 
-\textbf{Single adaptive:} Adaptivity for both the Dirichlet and Neumann stages, independently. \todo{Does this actually make sense?} Same initial timesteps in Dirichlet and Neumann stages
-
-\textbf{Figures}: \ref{FIG NNWR SDIRK2 TA DOUBLE ERROR}. Figures \ref{FIG NNWR SDIRK2 TA DOUBLE AIR STEEL}, \ref{FIG NNWR SDIRK2 TA DOUBLE AIR WATER} and \ref{FIG NNWR SDIRK2 TA DOUBLE WATER STEEL} for different material parameters.
-
-\textbf{Summary}: \todo{x}
-
-\begin{figure}[!ht]
-\includegraphics[scale = 0.35]{NNWR/TA/verify_adaptive_dim_1_n_50_order_-2.png}
-\includegraphics[scale = 0.35]{NNWR/TA/verify_adaptive_dim_2_n_32_order_-2.png}
-\caption{Test \ref{TEST COMB ERROR}, NNWR, Time adaptive SDIRK2, double adaptive. Left: 1D, Right: 2D}
-\label{FIG NNWR SDIRK2 TA DOUBLE ERROR}
-\end{figure}
-
-\FloatBarrier
-\subsubsection{Air-Steel}\label{SEC NNWR TA DOUBLE AIR STEEL}
+% \begin{figure}[!ht]
+% % \includegraphics[scale = 0.35]{NNWR/TA/air_steel/air_steelverify_adaptive_dim_1_n_50_order_-1.png}
+% % \includegraphics[scale = 0.35]{NNWR/TA/air_steel/air_steelverify_adaptive_dim_2_n_32_order_-1.png}
+% \caption{Test \ref{TEST MR} for Air-Steel coupling, NNWR, SDIRK2 TA single. Left: 1D. Right: 2D}
+% \label{FIG NNWR SDIRK2 TA SINGLE AIR STEEL}
+% \end{figure}
 % 
-
-\begin{figure}[!ht]
-\includegraphics[scale = 0.35]{NNWR/TA/air_steel/air_steelverify_adaptive_dim_1_n_50_order_-2.png}
-\includegraphics[scale = 0.35]{NNWR/TA/air_steel/air_steelverify_adaptive_dim_2_n_32_order_-2.png}
-\caption{Test \ref{TEST MR} for Air-Steel coupling, NNWR, SDIRK2 TA double. Left: 1D. Right: 2D}
-\label{FIG NNWR SDIRK2 TA DOUBLE AIR STEEL}
-\end{figure}
-
-\FloatBarrier
-\subsubsection{Air-Water}\label{SEC NNWR TA DOUBLE AIR WATER}
+% \FloatBarrier
+% \subsubsection{Air-Water}\label{SEC NNWR TA SINGLE AIR WATER}
+% % 
 % 
-
-\begin{figure}[!ht]
-\includegraphics[scale = 0.35]{NNWR/TA/air_water/air_waterverify_adaptive_dim_1_n_50_order_-2.png}
-\includegraphics[scale = 0.35]{NNWR/TA/air_water/air_waterverify_adaptive_dim_2_n_32_order_-2.png}
-\caption{Test \ref{TEST MR} for Air-Water coupling, NNWR, SDIRK2 TA double. Left: 1D. Right: 2D}
-\label{FIG NNWR SDIRK2 TA DOUBLE AIR WATER}
-\end{figure}
-
-\FloatBarrier
-\subsubsection{Water-Steel}\label{SEC NNWR TA DOUBLE WATER STEEL}
+% \begin{figure}[!ht]
+% % \includegraphics[scale = 0.35]{NNWR/TA/air_water/air_waterverify_adaptive_dim_1_n_50_order_-1.png}
+% % \includegraphics[scale = 0.35]{NNWR/TA/air_water/air_waterverify_adaptive_dim_2_n_32_order_-1.png}
+% \caption{Test \ref{TEST MR} for Air-Water coupling, NNWR, SDIRK2 TA single. Left: 1D. Right: 2D}
+% \label{FIG NNWR SDIRK2 TA SINGLE AIR WATER}
+% \end{figure}
 % 
-
-\begin{figure}[!ht]
-\includegraphics[scale = 0.35]{NNWR/TA/water_steel/water_steelverify_adaptive_dim_1_n_50_order_-2.png}
-\includegraphics[scale = 0.35]{NNWR/TA/water_steel/water_steelverify_adaptive_dim_2_n_32_order_-2.png}
-\caption{Test \ref{TEST MR} for Water-Steel coupling, NNWR, SDIRK2 TA double. Left: 1D. Right: 2D}
-\label{FIG NNWR SDIRK2 TA DOUBLE WATER STEEL}
-\end{figure}
+% \FloatBarrier
+% \subsubsection{Water-Steel}\label{SEC NNWR TA SINGLE WATER STEEL}
+% % 
+% 
+% \begin{figure}[!ht]
+% % \includegraphics[scale = 0.35]{NNWR/TA/water_steel/water_steelverify_adaptive_dim_1_n_50_order_-1.png}
+% % \includegraphics[scale = 0.35]{NNWR/TA/water_steel/water_steelverify_adaptive_dim_2_n_32_order_-1.png}
+% \caption{Test \ref{TEST MR} for Water-Steel coupling, NNWR, SDIRK2 TA single. Left: 1D. Right: 2D}
+% \label{FIG NNWR SDIRK2 TA SINGLE WATER STEEL}
+% \end{figure}
+% 
+% \FloatBarrier
+% \subsection{SDIRK2 time adaptive, double adaptive}\label{SEC NNWR SDIRK2 TA DOUBLE}
+% % 
+% \textbf{Single adaptive:} Adaptivity for both the Dirichlet and Neumann stages, independently. \todo{Does this actually make sense?} Same initial timesteps in Dirichlet and Neumann stages
+% 
+% \textbf{Figures}: \ref{FIG NNWR SDIRK2 TA DOUBLE ERROR}. Figures \ref{FIG NNWR SDIRK2 TA DOUBLE AIR STEEL}, \ref{FIG NNWR SDIRK2 TA DOUBLE AIR WATER} and \ref{FIG NNWR SDIRK2 TA DOUBLE WATER STEEL} for different material parameters.
+% 
+% \textbf{Summary}: \todo{x}
+% 
+% \begin{figure}[!ht]
+% % \includegraphics[scale = 0.35]{NNWR/TA/verify_adaptive_dim_1_n_50_order_-2.png}
+% % \includegraphics[scale = 0.35]{NNWR/TA/verify_adaptive_dim_2_n_32_order_-2.png}
+% \caption{Test \ref{TEST COMB ERROR}, NNWR, Time adaptive SDIRK2, double adaptive. Left: 1D, Right: 2D}
+% \label{FIG NNWR SDIRK2 TA DOUBLE ERROR}
+% \end{figure}
+% 
+% \FloatBarrier
+% \subsubsection{Air-Steel}\label{SEC NNWR TA DOUBLE AIR STEEL}
+% % 
+% 
+% \begin{figure}[!ht]
+% % \includegraphics[scale = 0.35]{NNWR/TA/air_steel/air_steelverify_adaptive_dim_1_n_50_order_-2.png}
+% % \includegraphics[scale = 0.35]{NNWR/TA/air_steel/air_steelverify_adaptive_dim_2_n_32_order_-2.png}
+% \caption{Test \ref{TEST MR} for Air-Steel coupling, NNWR, SDIRK2 TA double. Left: 1D. Right: 2D}
+% \label{FIG NNWR SDIRK2 TA DOUBLE AIR STEEL}
+% \end{figure}
+% 
+% \FloatBarrier
+% \subsubsection{Air-Water}\label{SEC NNWR TA DOUBLE AIR WATER}
+% % 
+% 
+% \begin{figure}[!ht]
+% % \includegraphics[scale = 0.35]{NNWR/TA/air_water/air_waterverify_adaptive_dim_1_n_50_order_-2.png}
+% % \includegraphics[scale = 0.35]{NNWR/TA/air_water/air_waterverify_adaptive_dim_2_n_32_order_-2.png}
+% \caption{Test \ref{TEST MR} for Air-Water coupling, NNWR, SDIRK2 TA double. Left: 1D. Right: 2D}
+% \label{FIG NNWR SDIRK2 TA DOUBLE AIR WATER}
+% \end{figure}
+% 
+% \FloatBarrier
+% \subsubsection{Water-Steel}\label{SEC NNWR TA DOUBLE WATER STEEL}
+% % 
+% 
+% \begin{figure}[!ht]
+% % \includegraphics[scale = 0.35]{NNWR/TA/water_steel/water_steelverify_adaptive_dim_1_n_50_order_-2.png}
+% % \includegraphics[scale = 0.35]{NNWR/TA/water_steel/water_steelverify_adaptive_dim_2_n_32_order_-2.png}
+% \caption{Test \ref{TEST MR} for Water-Steel coupling, NNWR, SDIRK2 TA double. Left: 1D. Right: 2D}
+% \label{FIG NNWR SDIRK2 TA DOUBLE WATER STEEL}
+% \end{figure}
 
 \end{document}

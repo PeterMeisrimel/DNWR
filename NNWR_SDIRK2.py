@@ -39,7 +39,7 @@ def NNWR_SDIRK2(self, tf, N1, N2, init_cond, theta = None, maxiter = 100, TOL = 
     
     if theta is None: theta = self.NNWR_theta_opt(dt, dt_other)
     
-    rel_tol_fac, updates = self.norm_L2(ug0), []
+    rel_tol_fac, updates = self.norm_interface(ug0), []
     self.comm.Barrier()
     if rel_tol_fac < 1e-6: rel_tol_fac = 1.
     for k in range(maxiter):
@@ -56,11 +56,11 @@ def NNWR_SDIRK2(self, tf, N1, N2, init_cond, theta = None, maxiter = 100, TOL = 
         if len(u1_list) == 1: # only single timestep, use same approximation as for IE
             u1dot = (-uD0 + u1_list[0])/dt
             ugdot = (-ug0 + g_WF_func(dt))/dt
-            flux0 = self.Mgg1.dot(ugdot) + self.Mg1.dot(u1dot) + self.Agg1.dot(ug0) + self.Ag1.dot(u10)             
+            flux0 = self.Mgg1.dot(ugdot) + self.Mg1.dot(u1dot) + self.Agg1.dot(ug0) + self.Ag1.dot(uD0)             
         else: ## at least 2 timesteps, use 3 point finite difference
             u1dot = (-3*uD0 + 4*u1_list[0] - u1_list[1])/(2*dt)
             ugdot = (-3*ug0 + 4*g_WF_func(dt) - g_WF_func(2*dt))/(2*dt)
-            flux0 = self.Mgg1.dot(ugdot) + self.Mg1.dot(u1dot) + self.Agg1.dot(ug0) + self.Ag1.dot(u10)
+            flux0 = self.Mgg1.dot(ugdot) + self.Mg1.dot(u1dot) + self.Agg1.dot(ug0) + self.Ag1.dot(uD0)
         flux_WF[0], flux_WF_stage[0] = flux0, flux0 # update fluxes
             
         ## communication
@@ -92,7 +92,7 @@ def NNWR_SDIRK2(self, tf, N1, N2, init_cond, theta = None, maxiter = 100, TOL = 
             g_old[i] = g_old[i] - theta*(phi_self[i] + phi_other_f(t))
             
         # bookkeeping
-        updates.append(self.norm_L2(g_old[-1] - tmp))
+        updates.append(self.norm_interface(g_old[-1] - tmp))
         print(self.ID_SELF, k, updates[-1])
         if updates[-1]/rel_tol_fac < TOL: # STOPPING CRITERIA FOR FIXED POINT ITERATION
             break
@@ -117,21 +117,21 @@ if __name__ == '__main__':
     save = 'verify/NNWR/SDIRK2/'
         
     ## 1D
-    verify_with_monolithic(k = 14, savefig = save, **p1) # ex sol in single iteration
-    verify_with_monolithic(k = 14, theta = 0.3, savefig = save + 'non_opt_theta', **p1) # theta not optimal to see actual convergence
-    verify_splitting_error(k = 10, savefig = save, **p1)
-    verify_comb_error(k = 10, savefig = save, **p1)
-    verify_MR_comb(k = 8, savefig = save, **p1)
+    verify_with_monolithic(k = 12, savefig = save, **p1) # ex sol in single iteration
+    verify_with_monolithic(k = 12, theta = 0.3, savefig = save + 'non_opt_theta', **p1) # theta not optimal to see actual convergence
+    verify_splitting_error(k = 8, savefig = save, **p1)
+    verify_comb_error(k = 8, savefig = save, **p1)
+    verify_MR_comb(k = 6, savefig = save, **p1)
     
     ## 2D
-    verify_with_monolithic(k = 12, savefig = save, **p2)
-    verify_splitting_error(k = 10, savefig = save, **p2)
-    verify_comb_error(k = 9, savefig = save, **p2)
-    verify_MR_comb(k = 7, savefig = save, **p2)
+    verify_with_monolithic(k = 10, savefig = save, **p2)
+    verify_splitting_error(k = 9, savefig = save, **p2)
+    verify_comb_error(k = 8, savefig = save, **p2)
+    verify_MR_comb(k = 6, savefig = save, **p2)
     
     for which in ['air_water', 'air_steel', 'water_steel']:
         pp = get_parameters(which)
-        p1 = {'init_cond': init_cond_1d, 'n': 50, 'dim': 1, 'order': 2, 'WR_type': 'NNWR', **pp, 'tf': 1000}
-        p2 = {'init_cond': init_cond_2d, 'n': 32, 'dim': 2, 'order': 2, 'WR_type': 'NNWR', **pp, 'tf': 1000}
-        verify_MR_comb(k = 6, savefig = save + which + '/' + which, **p1)
-        verify_MR_comb(k = 8, savefig = save + which + '/' + which, **p2)
+        p1 = {'init_cond': init_cond_1d, 'n': 50, 'dim': 1, 'order': 2, 'WR_type': 'NNWR', **pp, 'tf': 10000}
+        p2 = {'init_cond': init_cond_2d, 'n': 32, 'dim': 2, 'order': 2, 'WR_type': 'NNWR', **pp, 'tf': 10000}
+        verify_MR_comb(k = 5, savefig = save + which + '/' + which, **p1)
+        verify_MR_comb(k = 5, savefig = save + which + '/' + which, **p2)

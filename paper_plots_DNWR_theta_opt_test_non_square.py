@@ -8,7 +8,6 @@ Created on Tue Apr 28 14:47:34 2020
 
 import numpy as np
 import pylab as pl
-import scipy as sp
 from FSI_verification import get_problem, get_solver, get_parameters, get_init_cond
 import json
 from Problem_FSI_1D import Problem_FSI_1D
@@ -27,7 +26,8 @@ def get_conv_rates(init_cond, tf, N_steps = 100, s = 100, order = 1, dim = 1, n 
     
     results = {'updates': [], 'theta': list(np.linspace(thmin, thmax, s))}
     
-    prob = get_problem(dim = dim, n = n, **kwargs, len_1 = 2, len_2 = 3)
+#    prob = get_problem(dim = dim, n = n, **kwargs, len_1 = 2, len_2 = 3)
+    prob = get_problem(dim = dim, n = n, **kwargs, len_1 = 9, len_2 = 1)
     solver = get_solver(prob, order = order, WR_type = 'DNWR')
     
     for th in results['theta']:
@@ -85,22 +85,22 @@ def plotting(input_file, savefile):
     pl.axvline(res_IE_1D['theta_opt'], ls = '-', color = 'k', label = r'$\Theta_{opt}$')
     a, b = res_IE_1D['theta_CFL_inf'], res_IE_1D['theta_CFL_zero']
     pl.xlim(res_IE_1D['theta_start'], res_IE_1D['theta_stop'])
-    pl.ylim(pl.ylim())
+    pl.ylim(1e-7, 2)
     pl.fill_between([min(a,b), max(a,b)], [min(pl.ylim())/100]*2, [max(pl.ylim())*100]*2, alpha = 0.2)
     
     pl.xlabel(r'$\Theta$', labelpad = -20, position = (1.08, -1), fontsize = 20)
     lp = -50 if label == 'Air-Steel' else -70
     pl.ylabel('Conv. rate', rotation = 0, labelpad = lp, position = (2., 1.05), fontsize = 20)
-    pl.legend()
+    pl.legend(loc = 3)
     pl.savefig(savefile, dpi = 100)
     
 if __name__ == "__main__":
     kmax = 6
-    for tf, which, C1, C2, thmin, thmax in [(1e6, 'air_water', 1, 1, 0.9, 1),
-                                            (1e4, 'air_steel', 1, 1, 0.9992, 0.9999),
-                                            (1e4, 'water_steel', 1, 1, 0.2, 1)]:
+#    for tf, which, C1, C2, thmin, thmax in [(1e4, 'air_water', 1, 1, 0.9, 1)]:
+#    for tf, which, C1, C2, thmin, thmax in [(1e4, 'air_steel', 1, 1, 0.9992, 0.9999)]:
+    for tf, which, C1, C2, thmin, thmax in [(1e4, 'water_steel', 1, 1, 0.2, 1)]:
         tf = int(tf)
         file = f'plots_data/theta_opt_test_non_square_{which}_{C1}_{C2}_{tf}.txt'
-#       run_all(file, **get_parameters(which), tf = tf, n1 = 199, n2 = 99, s = 30, C1 = C1, C2 = C2)
+        run_all(file, **get_parameters(which), tf = tf, n1 = 199, n2 = 5, s = 30, C1 = C1, C2 = C2, thmin = thmin, thmax = thmax)
 #        run_all(file, **get_parameters(which), tf = tf, n1 = 9, n2 = 9, s = 10, C1 = C1, C2 = C2, thmin = thmin, thmax = thmax)
         plotting(file, f'plots/theta_opt_test_non_square_{which}_{C1}_{C2}_{tf}.png')

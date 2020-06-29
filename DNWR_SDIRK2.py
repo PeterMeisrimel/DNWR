@@ -27,7 +27,7 @@ def DNWR_SDIRK2(self, tf, N1, N2, init_cond, theta = None, maxiter = 100, TOL = 
     flux_WF_1 = [np.copy(flux0) for i in range(N1 + 1)] # waveform of fluxes, D grid, first stage
     flux_WF_2 = [np.copy(flux0) for i in range(N1 + 1)] # waveform of fluxes, D grid, second stage
     
-    rel_tol_fac, updates = self.norm_L2(ug0), []
+    rel_tol_fac, updates = self.norm_interface(ug0), []
     if rel_tol_fac < 1e-6: rel_tol_fac = 1.
     for k in range(maxiter):
         # Dirichlet time-integration
@@ -64,7 +64,7 @@ def DNWR_SDIRK2(self, tf, N1, N2, init_cond, theta = None, maxiter = 100, TOL = 
         ug_WF_old = [theta*ug_WF_new[i] + (1-theta)*ug_WF_old[i] for i in range(len(t2))]
         
         # bookkeeping
-        updates.append(self.norm_L2(ug_WF_old[-1] - tmp))
+        updates.append(self.norm_interface(ug_WF_old[-1] - tmp))
         if updates[-1]/rel_tol_fac < TOL: # STOPPING CRITERIA FOR FIXED POINT ITERATION
             break
     ## last output only for work performance test, include this for other ones as well or remove afterwards?
@@ -142,7 +142,7 @@ if __name__ == '__main__':
     
     for which in ['air_water', 'air_steel', 'water_steel']:
         pp = get_parameters(which)
-        p1 = {'init_cond': init_cond_1d, 'n': 50, 'dim': 1, 'order': 2, 'WR_type': 'DNWR', **pp, 'tf': 1000}
-        p2 = {'init_cond': init_cond_2d, 'n': 32, 'dim': 2, 'order': 2, 'WR_type': 'DNWR', **pp, 'tf': 1000}
-        verify_MR_comb(k = 8, savefig = save + which + '/' + which, **p1)
-        verify_MR_comb(k = 9, savefig = save + which + '/' + which, **p2)
+        p1 = {'init_cond': init_cond_1d, 'n': 50, 'dim': 1, 'order': 2, 'WR_type': 'DNWR', **pp, 'tf': 10000}
+        p2 = {'init_cond': init_cond_2d, 'n': 32, 'dim': 2, 'order': 2, 'WR_type': 'DNWR', **pp, 'tf': 10000}
+        verify_MR_comb(k = 6, savefig = save + which + '/' + which, **p1)
+        verify_MR_comb(k = 6, savefig = save + which + '/' + which, **p2)
