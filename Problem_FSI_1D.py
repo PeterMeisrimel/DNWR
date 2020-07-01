@@ -54,11 +54,12 @@ class Problem_FSI_1D(Problem_FSI):
     
     def get_monolithic_matrices(self):
         assert self.WR_type != 'NNWR', 'monolithic matrices are not stored on single processor for NNWR'
-        A = sp.bmat([[self.A1, np.zeros((self.n_int_1, self.n_int_2)), self.A1g],
-                     [np.zeros((self.n_int_2, self.n_int_1)), self.A2, self.A2g], 
+        ## None means zero blocks here, np.zeros would cause a memory error for high resolutions
+        A = sp.bmat([[self.A1, None, self.A1g],
+                     [None, self.A2, self.A2g], 
                      [self.Ag1, self.Ag2, self.Agg1 + self.Agg2]], format = 'csr')
-        M = sp.bmat([[self.M1, np.zeros((self.n_int_1, self.n_int_2)), self.M1g],
-                     [np.zeros((self.n_int_2, self.n_int_1)), self.M2, self.M2g], 
+        M = sp.bmat([[self.M1, None, self.M1g],
+                     [None, self.M2, self.M2g], 
                      [self.Mg1, self.Mg2, self.Mgg1 + self.Mgg2]], format = 'csr')
         return A, M
     
