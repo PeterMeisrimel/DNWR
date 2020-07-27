@@ -21,7 +21,7 @@ mpi4py
 
 ## Publications
 
-In preparation
+Meisrimel, Peter, Azahar Monge, and Philipp Birken. "A time adaptive multirate Dirichlet-Neumann waveform relaxation method for heterogeneous coupled heat equations." arXiv preprint arXiv:2007.00410 (2020)
 
 ## Related Literature
 
