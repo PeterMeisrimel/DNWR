@@ -263,7 +263,7 @@ def verify_splitting_error(init_cond, tf = 1, k = 10, kmin = 0, TOL = 1e-12, the
     pl.xlabel('dt'); pl.ylabel('DN iter')
     pl.grid(True, which = 'major')
     if savefig is not None:
-        s = 'splitting_error_iters_dim_{dim}_ord_{order}.png'.format(kwargs['dim'], order)
+        s = 'splitting_error_iters_dim_{}_ord_{}.png'.format(kwargs['dim'], order)
         pl.savefig(savefig  + s, dpi = 100)
     
 ## sum of splitting and time-integration order
